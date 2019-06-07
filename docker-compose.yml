@@ -1,0 +1,69 @@
+version: "3"
+services:
+  core-engine:
+    build: .
+    depends_on:
+      - job-repository
+      - rabbitmq
+      - data-access
+    image: wacodis/core-engine
+    volumes:
+      - ./persistence:/usr/share/wacodis/data
+    env_file:
+      - ./config/wacodis.env
+    environment:
+        spring.scheduler.jobrepository.uri: http://job-repository:8081
+        spring.evaluator.dataaccess.uri: http://data-access:8082
+  job-repository:
+    build: .
+    depends_on:
+      - rabbitmq
+      - elasticsearch
+    image: wacodis/job-repository
+    ports:
+      - 8081:8081
+    env_file:
+      - ./config/wacodis.env
+    environment:
+        data.elasticsearch.host: elasticsearch
+  data-access:
+    build: .
+    depends_on:
+      - rabbitmq
+      - elasticsearch
+    image: wacodis/data-access-api
+    ports:
+      - 8082:8082
+    env_file:
+      - ./config/wacodis.env
+    environment:
+        data.elasticsearch.host: elasticsearch
+        spring.resources-api.elasticsearch.uri: http://elasticsearch:9200
+        spring.dataenvelopes-api.elasticsearch.uri: http://elasticsearch:9200
+  metadata-connector:
+    build:
+      context: ./metadata-connector
+    depends_on:
+      - rabbitmq
+    image: wacodis/metadata-connector
+    env_file:
+      - ./config/wacodis.env
+  rabbitmq:
+    image: rabbitmq:3.7-management-alpine
+    environment:
+        RABBITMQ_DEFAULT_USER: "rabbitmq"
+        RABBITMQ_DEFAULT_PASS: "rabbitmq"
+    ports:
+      - 5672:5672
+      - 15672:15672
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.0
+    ports:
+      - 9200:9200
+      - 9300:9300
+    expose:
+      - 9200
+      - 9300
+    volumes:
+      - ./persistence:/usr/share/elasticsearch/data
+      - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
