@@ -1,0 +1,29 @@
+version: "3"
+services:
+  rabbitmq:
+    image: rabbitmq:3.7-management-alpine
+    environment:
+        RABBITMQ_DEFAULT_USER: "rabbitmq"
+        RABBITMQ_DEFAULT_PASS: "rabbitmq"
+    ports:
+      - 5672:5672
+      - 15672:15672
+    # networks:
+    #   - shared
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.0
+    ports:
+      - 9200:9200
+      - 9300:9300
+    expose:
+      - 9200
+      - 9300
+    volumes:
+      - ./persistence:/usr/share/elasticsearch/data
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    # networks:
+    #   - shared
+# networks:
+#   shared:
+#     driver: bridge
+

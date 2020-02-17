@@ -1,7 +1,6 @@
 version: "3"
 services:
   core-engine:
-    build: .
     depends_on:
       - job-repository
       - rabbitmq
@@ -12,10 +11,13 @@ services:
     env_file:
       - ./config/wacodis.env
     environment:
-        spring.scheduler.jobrepository.uri: http://job-repository:8081
-        spring.evaluator.dataaccess.uri: http://data-access:8082
+      spring.datasource.core.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/core-job-store
+      spring.scheduler.jobrepository.uri: http://job-repository:8081
+      spring.evaluator.dataaccess.uri: http://data-access:8082
+      spring.executor.wps.uri: http://javaps:8080/wacodis-wps
+    networks:
+      - wacodis_services_shared
   job-repository:
-    build: .
     depends_on:
       - rabbitmq
       - elasticsearch
@@ -26,8 +28,9 @@ services:
       - ./config/wacodis.env
     environment:
         data.elasticsearch.host: elasticsearch
+    networks:
+      - wacodis_services_shared
   data-access:
-    build: .
     depends_on:
       - rabbitmq
       - elasticsearch
@@ -40,30 +43,26 @@ services:
         data.elasticsearch.host: elasticsearch
         spring.resources-api.elasticsearch.uri: http://elasticsearch:9200
         spring.dataenvelopes-api.elasticsearch.uri: http://elasticsearch:9200
+    networks:
+      - wacodis_services_shared
   metadata-connector:
-    build:
-      context: ./metadata-connector
     depends_on:
       - rabbitmq
     image: wacodis/metadata-connector
     env_file:
       - ./config/wacodis.env
-  rabbitmq:
-    image: rabbitmq:3.7-management-alpine
-    environment:
-        RABBITMQ_DEFAULT_USER: "rabbitmq"
-        RABBITMQ_DEFAULT_PASS: "rabbitmq"
-    ports:
-      - 5672:5672
-      - 15672:15672
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.0
-    ports:
-      - 9200:9200
-      - 9300:9300
-    expose:
-      - 9200
-      - 9300
-    volumes:
-      - ./persistence:/usr/share/elasticsearch/data
-      - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+    networks:
+      - wacodis_services_shared
+  datasource-observer:
+    depends_on:
+      - rabbitmq
+    image: wacodis/datasource-observer
+    env_file:
+      - ./config/wacodis.env
+    environment: 
+       spring.datasource.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/observer-job-store
+    networks:
+      - wacodis_services_shared
+networks:
+  wacodis_services_shared:
+    external: true
