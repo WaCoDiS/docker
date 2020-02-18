@@ -55,6 +55,7 @@ services:
       - ./config/wacodis.env
     environment:
       spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
+      dataaccess.uri: http://data-access-api:8080/dataAccess
     networks:
       - wacodis_services_shared
 
