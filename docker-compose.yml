@@ -9,7 +9,7 @@ services:
     environment:
       spring.datasource.core.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/core-job-store
       spring.scheduler.jobrepository.uri: http://job-definition-api:8080
-      spring.evaluator.dataaccess.uri: http://data-access-api:8080
+      spring.evaluator.dataaccess.uri: http://data-access-api:8080/dataAccess/resources/search
       spring.executor.wps.uri: http://javaps:8080/wacodis-wps
       spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
       spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
@@ -42,7 +42,6 @@ services:
     env_file:
       - ./config/wacodis.env
     environment:
-        data.elasticsearch.host: wacodis_services_elasticsearch_1
         spring.resources-api.elasticsearch.uri: http://wacodis_services_elasticsearch_1:9200
         spring.dataenvelopes-api.elasticsearch.uri: http://wacodis_services_elasticsearch_1:9200
         spring.cloud.stream.bindings.acknowledgeDataEnvelope.destination: wacodis.test.data.accessible
