@@ -73,8 +73,6 @@ services:
     image: registry.wacodis.demo.52north.org/message-dashboard:1.0.0
     env_file:
       - ./config/wacodis.env
-    ports:
-      - 8083:8080
     environment: 
       spring.cloud.stream.bindings.jobs-new.destination: wacodis.test.jobs.new
       spring.cloud.stream.bindings.jobs-status.destination: wacodis.test.jobs.status
