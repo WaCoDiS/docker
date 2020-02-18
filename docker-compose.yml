@@ -1,10 +1,6 @@
 version: "3"
 services:
   core-engine:
-    depends_on:
-      - job-repository
-      - rabbitmq
-      - data-access
     image: wacodis/core-engine
     volumes:
       - ./persistence:/usr/share/wacodis/data
@@ -12,31 +8,26 @@ services:
       - ./config/wacodis.env
     environment:
       spring.datasource.core.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/core-job-store
-      spring.scheduler.jobrepository.uri: http://job-repository:8081
-      spring.evaluator.dataaccess.uri: http://data-access:8082
+      spring.scheduler.jobrepository.uri: http://job-repository:8080
+      spring.evaluator.dataaccess.uri: http://data-access:8080
       spring.executor.wps.uri: http://javaps:8080/wacodis-wps
     networks:
       - wacodis_services_shared
   job-repository:
-    depends_on:
-      - rabbitmq
-      - elasticsearch
-    image: wacodis/job-repository
+    image: wacodis/job-definition-api
     ports:
-      - 8081:8081
+      - 8081:8080
     env_file:
       - ./config/wacodis.env
     environment:
-        data.elasticsearch.host: elasticsearch
+      spring.data.elasticsearch.host: elasticsearch
+      spring.data.elasticsearch.cluster.name: elasticsearch_wacodis
     networks:
       - wacodis_services_shared
   data-access:
-    depends_on:
-      - rabbitmq
-      - elasticsearch
     image: wacodis/data-access-api
     ports:
-      - 8082:8082
+      - 8082:8080
     env_file:
       - ./config/wacodis.env
     environment:
@@ -46,20 +37,19 @@ services:
     networks:
       - wacodis_services_shared
   metadata-connector:
-    depends_on:
-      - rabbitmq
     image: wacodis/metadata-connector
     env_file:
       - ./config/wacodis.env
+    environment:
+       dataaccess.uri: http://data-access:8080/dataAccess
+       logging.level.de.wacodis: DEBUG
     networks:
       - wacodis_services_shared
   datasource-observer:
-    depends_on:
-      - rabbitmq
     image: wacodis/datasource-observer
     env_file:
       - ./config/wacodis.env
-    environment: 
+    environment:
        spring.datasource.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/observer-job-store
     networks:
       - wacodis_services_shared
