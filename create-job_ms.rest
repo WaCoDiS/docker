@@ -12,8 +12,8 @@ content-type: application/json
    },
    "description":"sentinel-test-job muenster area",
    "execution":{ 
-      "pattern":"15 17 * * *",
-      "_comment":"Execute at 12:10 (server time) every day"
+      "pattern":"18 17 * * *",
+      "_comment":"Execute at 17:18 (server time) every day"
    },
    "inputs":[ 
       { 
