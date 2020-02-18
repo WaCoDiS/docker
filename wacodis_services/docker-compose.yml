@@ -8,8 +8,8 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
-    # networks:
-    #   - shared
+    networks:
+      - shared
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.5.0
     ports:
@@ -21,9 +21,8 @@ services:
     volumes:
       - ./persistence:/usr/share/elasticsearch/data
       - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
-    # networks:
-    #   - shared
-# networks:
-#   shared:
-#     driver: bridge
-
+    networks:
+      - shared
+networks:
+  shared:
+    driver: bridge

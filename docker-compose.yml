@@ -1,68 +1,92 @@
 version: "3"
 services:
   core-engine:
-    depends_on:
-      - job-repository
-      - rabbitmq
-      - data-access
-    image: wacodis/core-engine
+    image: registry.wacodis.demo.52north.org/core-engine:1.0.0
     volumes:
       - ./persistence:/usr/share/wacodis/data
     env_file:
       - ./config/wacodis.env
     environment:
       spring.datasource.core.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/core-job-store
-      spring.scheduler.jobrepository.uri: http://job-repository:8081
-      spring.evaluator.dataaccess.uri: http://data-access:8082
+      spring.scheduler.jobrepository.uri: http://job-definition-api:8080
+      spring.evaluator.dataaccess.uri: http://data-access-api:8080
       spring.executor.wps.uri: http://javaps:8080/wacodis-wps
+      spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
+      spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+      spring.cloud.stream.bindings.toolFinished.destination: wacodis.test.tools.finished
+      spring.cloud.stream.bindings.toolExecution.destination: wacodis.test.tools.execute
+      spring.cloud.stream.bindings.toolFailure.destination: wacodis.test.tools.failure
     networks:
       - wacodis_services_shared
-  job-repository:
-    depends_on:
-      - rabbitmq
-      - elasticsearch
-    image: wacodis/job-repository
+
+  job-definition-api:
+    image: registry.wacodis.demo.52north.org/job-definition-api:1.0.0
     ports:
-      - 8081:8081
+      - 8081:8080
     env_file:
       - ./config/wacodis.env
     environment:
-        data.elasticsearch.host: elasticsearch
+        spring.data.elasticsearch.host: wacodis_services_elasticsearch_1
+        spring.data.elasticsearch.cluster.name: elasticsearch_wacodis
+        spring.cloud.stream.bindings.job-status.destination: wacodis.test.jobs.status
+        spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+        spring.cloud.stream.bindings.job-deletion.destination: wacodis.test.jobs.deleted
+        spring.cloud.stream.bindings.job-creation-confirm.destination: wacodis.test.jobs.new
     networks:
       - wacodis_services_shared
-  data-access:
-    depends_on:
-      - rabbitmq
-      - elasticsearch
-    image: wacodis/data-access-api
+
+  data-access-api:
+    image: registry.wacodis.demo.52north.org/data-access-api:1.0.0
     ports:
-      - 8082:8082
+      - 8082:8080
     env_file:
       - ./config/wacodis.env
     environment:
-        data.elasticsearch.host: elasticsearch
-        spring.resources-api.elasticsearch.uri: http://elasticsearch:9200
-        spring.dataenvelopes-api.elasticsearch.uri: http://elasticsearch:9200
+        data.elasticsearch.host: wacodis_services_elasticsearch_1
+        spring.resources-api.elasticsearch.uri: http://wacodis_services_elasticsearch_1:9200
+        spring.dataenvelopes-api.elasticsearch.uri: http://wacodis_services_elasticsearch_1:9200
+        spring.cloud.stream.bindings.acknowledgeDataEnvelope.destination: wacodis.test.data.accessible
     networks:
       - wacodis_services_shared
+
   metadata-connector:
-    depends_on:
-      - rabbitmq
-    image: wacodis/metadata-connector
+    image: registry.wacodis.demo.52north.org/metadata-connector:1.0.0
     env_file:
       - ./config/wacodis.env
+    environment:
+      spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
     networks:
       - wacodis_services_shared
+
   datasource-observer:
-    depends_on:
-      - rabbitmq
-    image: wacodis/datasource-observer
+    image: registry.wacodis.demo.52north.org/datasource-observer:1.0.0
     env_file:
       - ./config/wacodis.env
     environment: 
-       spring.datasource.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/observer-job-store
+      spring.datasource.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/observer-job-store
+      spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+      spring.cloud.stream.bindings.output-data-envelope.destination: wacodis.test.data.available
     networks:
       - wacodis_services_shared
+
+  message-dashboard:
+    image: registry.wacodis.demo.52north.org/message-dashboard:1.0.0
+    env_file:
+      - ./config/wacodis.env
+    ports:
+      - 8083:8080
+    environment: 
+      spring.cloud.stream.bindings.jobs-new.destination: wacodis.test.jobs.new
+      spring.cloud.stream.bindings.jobs-status.destination: wacodis.test.jobs.status
+      spring.cloud.stream.bindings.jobs-deletion.destination: wacodis.test.jobs.deleted
+      spring.cloud.stream.bindings.tools-execute.destination: wacodis.test.tools.execute
+      spring.cloud.stream.bindings.tools-finished.destination: wacodis.test.tools.finished
+      spring.cloud.stream.bindings.tools-failure.destination: wacodis.test.tools.failure
+      spring.cloud.stream.bindings.data-available.destination: wacodis.test.data.available
+      spring.cloud.stream.bindings.data-accessible.destination: wacodis.test.data.accessible
+    networks:
+      - wacodis_services_shared
+
 networks:
   wacodis_services_shared:
     external: true
