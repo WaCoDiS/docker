@@ -4,7 +4,7 @@ services:
     build: .
     image: wacodis/wps:latest
     env_file:
-      - wacodis.env
+      - wacodis-javaps.env
     ports:
       - 8080:8080
     deploy:
@@ -19,3 +19,8 @@ services:
       - ./config/gpf:/tmp/gpf
       - ./outputs:/tmp/workdir
       - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - shared
+networks:
+  shared:
+    driver: bridge

@@ -1,5 +1,6 @@
 version: "3"
 services:
+  # Core Engine
   core-engine:
     image: wacodis/core-engine
     volumes:
@@ -11,8 +12,15 @@ services:
       spring.scheduler.jobrepository.uri: http://job-definition-api:8080
       spring.evaluator.dataaccess.uri: http://data-access:8080/dataAccess/resources/search
       spring.executor.wps.uri: http://javaps:8080/wacodis-wps
+      spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
+      spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+      spring.cloud.stream.bindings.toolFinished.destination: wacodis.test.tools.finished
+      spring.cloud.stream.bindings.toolExecution.destination: wacodis.test.tools.execute
+      spring.cloud.stream.bindings.toolFailure.destination: wacodis.test.tools.failure
     networks:
       - wacodis_services_shared
+      - javaPS_services_shared
+  # Job Definition API
   job-definition-api:
     image: wacodis/job-definition-api
     ports:
@@ -22,8 +30,14 @@ services:
     environment:
       spring.data.elasticsearch.host: elasticsearch
       spring.data.elasticsearch.cluster.name: elasticsearch_wacodis
+      spring.cloud.stream.bindings.job-status.destination: wacodis.test.jobs.status
+      spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+      spring.cloud.stream.bindings.job-deletion.destination: wacodis.test.jobs.deleted
+      spring.cloud.stream.bindings.job-creation-confirm.destination: wacodis.test.jobs.new
     networks:
       - wacodis_services_shared
+      - javaPS_services_shared
+  # Data Access API
   data-access:
     image: wacodis/data-access-api
     ports:
@@ -33,24 +47,36 @@ services:
     environment:
       spring.resources-api.elasticsearch.uri: http://elasticsearch:9200
       spring.dataenvelopes-api.elasticsearch.uri: http://elasticsearch:9200
+      spring.cloud.stream.bindings.acknowledgeDataEnvelope.destination: wacodis.test.data.accessible
     networks:
       - wacodis_services_shared
+      - javaPS_services_shared
+  # Metadata Connector
   metadata-connector:
     image: wacodis/metadata-connector
     env_file:
       - ./config/wacodis.env
     environment:
        dataaccess.uri: http://data-access:8080/dataAccess
+       spring.cloud.stream.bindings.input-data-envelope.destination: wacodis.test.data.available
     networks:
       - wacodis_services_shared
+      - javaPS_services_shared
+  # Datasource Observer
   datasource-observer:
     image: wacodis/datasource-observer
     env_file:
       - ./config/wacodis.env
     environment:
        spring.datasource.quartz-data-source.jdbc-url: jdbc:h2:file:/usr/share/wacodis/data/observer-job-store
+       spring.cloud.stream.bindings.job-creation.destination: wacodis.test.jobs.new
+       spring.cloud.stream.bindings.output-data-envelope.destination: wacodis.test.data.available
     networks:
       - wacodis_services_shared
+      - javaPS_services_shared
+
 networks:
   wacodis_services_shared:
+    external: true
+  javaPS_services_shared:
     external: true
