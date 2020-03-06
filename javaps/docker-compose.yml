@@ -22,7 +22,8 @@ services:
     volumes:
       - ./config/tools:/tmp/tools
       - ./config/gpf:/tmp/gpf
-      - ./outputs:/tmp/workdir
+      # Workdir on docker host must be the same as the workdir within the javaPS container
+      - /tmp/workdir:/tmp/workdir
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - shared
